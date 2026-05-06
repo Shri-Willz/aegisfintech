@@ -5,20 +5,48 @@ import { Shield, Lock, Eye, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthProvider";
+import { useToast } from "@/hooks/use-toast";
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
+  const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", name: "", company: "", stage: "funded" });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      if (isSignUp) {
+        const { error } = await signUp(form.email, form.password, {
+          name: form.name,
+          company: form.company,
+          stage: form.stage,
+        });
+        if (error) {
+          toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+        toast({ title: "Account created!", description: "Welcome to Aegis." });
+      } else {
+        const { error } = await signIn(form.email, form.password);
+        if (error) {
+          toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+      }
       navigate("/dashboard");
-    }, 1200);
+    } catch (err) {
+      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
